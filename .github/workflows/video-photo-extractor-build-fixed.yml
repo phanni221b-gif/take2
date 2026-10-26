@@ -24,8 +24,9 @@ jobs:
       - name: Restore Java sources
         working-directory: video-photo-extractor
         run: |
-          cat java-src.part00 java-src.part01 java-src.part02 java-src.part03 java-src.part04 > java-src.tgz.b64
+          cat java-src.fixed00 java-src.fixed01 java-src.fixed02 java-src.fixed03 java-src.fixed04 > java-src.tgz.b64
           base64 -d java-src.tgz.b64 > java-src.tgz
+          echo "3f5274932359d38ba45dcc3d3d67323b3ce40c9e2d9b6e752fa5a45d4dcac470  java-src.tgz" | sha256sum -c -
           tar -xzf java-src.tgz
 
       - name: Set up JDK 17
