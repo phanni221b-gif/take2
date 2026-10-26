@@ -3,10 +3,16 @@ name: Build Video Photo Extractor APK
 on:
   push:
     branches: [ "build/video-photo-extractor-20261026" ]
+    paths-ignore:
+      - 'video-photo-extractor/dist/**'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
 jobs:
   build:
@@ -22,16 +28,15 @@ jobs:
           tar -xzf java-src.tgz
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Android SDK 35
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -42,12 +47,22 @@ jobs:
         working-directory: video-photo-extractor
         run: gradle --no-daemon :app:assembleDebug
 
-      - name: Rename APK
-        run: cp video-photo-extractor/app/build/outputs/apk/debug/app-debug.apk VideoPhotoExtractor.apk
+      - name: Stage APK
+        run: |
+          mkdir -p video-photo-extractor/dist
+          cp video-photo-extractor/app/build/outputs/apk/debug/app-debug.apk video-photo-extractor/dist/VideoPhotoExtractor.apk
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: VideoPhotoExtractor-apk
-          path: VideoPhotoExtractor.apk
+          path: video-photo-extractor/dist/VideoPhotoExtractor.apk
           if-no-files-found: error
+
+      - name: Commit APK to build branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f video-photo-extractor/dist/VideoPhotoExtractor.apk
+          git commit -m "Build VideoPhotoExtractor APK [skip ci]" || exit 0
+          git push
