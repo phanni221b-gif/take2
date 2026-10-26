@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   ANDROID_HOME: /usr/local/lib/android/sdk
@@ -47,22 +47,9 @@ jobs:
         working-directory: video-photo-extractor
         run: gradle --no-daemon :app:assembleDebug
 
-      - name: Stage APK
-        run: |
-          mkdir -p video-photo-extractor/dist
-          cp video-photo-extractor/app/build/outputs/apk/debug/app-debug.apk video-photo-extractor/dist/VideoPhotoExtractor.apk
-
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: VideoPhotoExtractor-apk
-          path: video-photo-extractor/dist/VideoPhotoExtractor.apk
+          path: video-photo-extractor/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-
-      - name: Commit APK to build branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f video-photo-extractor/dist/VideoPhotoExtractor.apk
-          git commit -m "Build VideoPhotoExtractor APK [skip ci]" || exit 0
-          git push
