@@ -1,4 +1,4 @@
-name: Build Video Photo Extractor APK Fixed
+name: Build Video Photo Extractor Release Inputs
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   ANDROID_HOME: /usr/local/lib/android/sdk
@@ -24,6 +24,7 @@ jobs:
       - name: Restore Java sources
         working-directory: video-photo-extractor
         run: |
+          cat java-src.part00 java-src.part01 java-src.part02 java-src.part03 java-src.part04 > java-src.tgz.b64
           base64 -d java-src.tgz.b64 > java-src.tgz
           tar -xzf java-src.tgz
 
@@ -43,26 +44,22 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
+      - name: Build unsigned release APK
         working-directory: video-photo-extractor
-        run: gradle --no-daemon :app:assembleDebug
+        run: gradle --no-daemon :app:assembleRelease
 
-      - name: Stage APK
+      - name: Stage release inputs
         run: |
-          mkdir -p video-photo-extractor/dist
-          cp video-photo-extractor/app/build/outputs/apk/debug/app-debug.apk video-photo-extractor/dist/VideoPhotoExtractor.apk
+          mkdir -p release-inputs/sign-tools/lib
+          cp video-photo-extractor/app/build/outputs/apk/release/app-release-unsigned.apk release-inputs/VideoPhotoExtractor-unsigned.apk
+          cp "$ANDROID_HOME/build-tools/35.0.0/apksigner" release-inputs/sign-tools/apksigner
+          cp "$ANDROID_HOME/build-tools/35.0.0/zipalign" release-inputs/sign-tools/zipalign
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" release-inputs/sign-tools/lib/apksigner.jar
+          chmod +x release-inputs/sign-tools/apksigner release-inputs/sign-tools/zipalign
 
-      - name: Upload APK artifact
+      - name: Upload release inputs
         uses: actions/upload-artifact@v4
         with:
-          name: VideoPhotoExtractor-apk
-          path: video-photo-extractor/dist/VideoPhotoExtractor.apk
+          name: VideoPhotoExtractor-release-inputs
+          path: release-inputs
           if-no-files-found: error
-
-      - name: Commit APK to build branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f video-photo-extractor/dist/VideoPhotoExtractor.apk
-          git commit -m "Build VideoPhotoExtractor APK [skip ci]" || exit 0
-          git push
