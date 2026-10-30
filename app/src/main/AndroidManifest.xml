@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
+        android:name=".SystemBarApplication"
         android:allowBackup="false"
         android:label="take2"
         android:supportsRtl="true">
